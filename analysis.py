@@ -81,32 +81,5 @@ for grp in ["early (<median delay)","late (>=median delay)"]:
         "median_from_dx_corrected":s_corr["median"],
         "median_from_seq":s_seq["median"]}
 
-# ---- 5. Cox: stage effect, naive vs left-truncated ----
-cx = d[d["STAGE_HIGHEST_RECORDED"].isin(["Stage 1-3","Stage 4"])].copy()
-cx["stage4"] = (cx["STAGE_HIGHEST_RECORDED"]=="Stage 4").astype(int)
-cx["age_z"] = (cx["CURRENT_AGE_DEID"]-cx["CURRENT_AGE_DEID"].mean())/cx["CURRENT_AGE_DEID"].std()
-cx = cx.dropna(subset=["age_z"])
-
-def cox_hr(dframe, entry_col=None):
-    cph = CoxPHFitter()
-    cols = ["T_dx","deceased","stage4","age_z"]
-    if entry_col: cols = cols+[entry_col]
-    cph.fit(dframe[cols], duration_col="T_dx", event_col="deceased", entry_col=entry_col)
-    out={}
-    for v in ["stage4","age_z"]:
-        out[v]={"HR":float(np.exp(cph.params_[v])),
-                "ci":[float(np.exp(cph.confidence_intervals_.loc[v].iloc[0])),
-                      float(np.exp(cph.confidence_intervals_.loc[v].iloc[1]))],
-                "p":float(cph.summary.loc[v,"p"])}
-    return out
-R["cox_from_dx_naive"] = cox_hr(cx)
-R["cox_from_dx_corrected"] = cox_hr(cx, entry_col="entry")
-# reference: cox from sequencing (as released)
-def cox_hr_seq(dframe):
-    cph=CoxPHFitter(); cph.fit(dframe[["T_seq","deceased","stage4","age_z"]],
-                               duration_col="T_seq",event_col="deceased")
-    return {v:{"HR":float(np.exp(cph.params_[v])),"p":float(cph.summary.loc[v,"p"])} for v in ["stage4","age_z"]}
-R["cox_from_seq"] = cox_hr_seq(cx)
-
 json.dump(R, open("out/results.json","w"), indent=2)
 print(json.dumps(R, indent=2))
