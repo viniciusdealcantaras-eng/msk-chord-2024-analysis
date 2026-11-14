@@ -57,12 +57,12 @@ folders are created automatically and are git-ignored.
    sensitivity analysis. Writes `out/results2.json`.
 5. `python analysis3.py`: Cox models for stage IV stratified by cancer type.
    Writes `out/results3_strat.json`.
-6. `python analysis4_reviewer.py`: landmark analysis, conditional Kendall's tau
-   (subsample test) and Schoenfeld test. Writes `out/results4_reviewer.json`.
-7. `python analysis5_revision.py`: analyses added in revision: stage at the
-   index diagnosis, exclusion of intervals longer than 10 and 20 years, early
-   risk sets, medians by cancer type and the full-cohort conditional Kendall's
-   tau. Writes `out/results5_revision.json`.
+6. `python analysis4_landmark_tau.py`: landmark analysis, conditional Kendall's
+   tau (subsample test) and Schoenfeld test. Writes `out/results4_landmark_tau.json`.
+7. `python analysis5_sensitivity.py`: sensitivity analyses: stage at the index
+   diagnosis, exclusion of intervals longer than 10 and 20 years, early risk
+   sets, medians by cancer type and the full-cohort conditional Kendall's tau.
+   Writes `out/results5_sensitivity.json`.
 8. `Rscript make_figures.R`: Figures 1 to 4 and Supplementary Figures S1 and
    S2, generated in R (base graphics and `survival`) from
    `out/analytic_dataset.csv`. Writes TIFF (600 dpi), PNG and PDF files to
@@ -85,6 +85,4 @@ numbers with the `survival` package (left truncation via
   `Surv(entry, exit, event)` in R.
 - Patients with no diagnosis in the timeline (n = 10) or with a diagnosis
   recorded after first sequencing (n = 50) are excluded.
-- Entry times are kept at full precision. Rounding them changes the ordering of
-  tied entry and event times and can shift some medians slightly (for example,
-  the adjusted median of the late-sequenced group).
+- Entry times are kept at full numerical precision.
