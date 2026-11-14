@@ -1,6 +1,6 @@
-"""Analyses added in revision R1: stage at index diagnosis, long intervals,
-early risk sets, per-type medians and full-cohort conditional Kendall's tau.
-Input: out/analytic_dataset.csv (make_analytic_dataset.py). Output: out/results5_revision.json"""
+"""Sensitivity analyses: stage at the index diagnosis, long diagnosis-to-sequencing
+intervals, early risk sets, medians by cancer type and full-cohort conditional Kendall's tau.
+Input: out/analytic_dataset.csv (make_analytic_dataset.py). Output: out/results5_sensitivity.json"""
 import sys, json
 import numpy as np, pandas as pd
 from lifelines import KaplanMeierFitter, CoxPHFitter
@@ -59,7 +59,7 @@ def cond(x, t0):
 R["lt_median_conditional_1mo"] = cond(d, 1.0)
 R["lt_median_conditional_3mo"] = cond(d, 3.0)
 
-# ---- landmark check (as described in manuscript) ----
+# ---- landmark cohort sizes ----
 for lm in [6, 12]:
     s = d[d["T"] >= lm].copy()
     s_seq = s[s.L <= lm]
@@ -80,5 +80,5 @@ for i0 in range(0, n, 400):
     num += float((sgn * comp).sum()); den += int(comp.sum())
 R["kendall_tau_full"] = round(num / den, 3); R["kendall_pairs"] = den
 
-json.dump(R, open("out/results5_revision.json", "w"), indent=1, default=str)
+json.dump(R, open("out/results5_sensitivity.json", "w"), indent=1, default=str)
 print(json.dumps(R, indent=1, default=str))
