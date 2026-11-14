@@ -128,16 +128,15 @@ res[["e) cedo  CORRIGIDA (m)"]] <- c(66.9,  mnc(early,TRUE))
 res[["e) tarde CORRIGIDA (m)"]] <- c(36.4,  mnc(latedf,TRUE))
 
 # --------------------------------------------------- (f) Cox -------------------
-cx <- d[d$STAGE_HIGHEST_RECORDED %in% c("Stage 1-3","Stage 4") & !is.na(d$CURRENT_AGE_DEID), ]
+cx <- d[d$STAGE_HIGHEST_RECORDED %in% c("Stage 1-3","Stage 4"), ]
 cx$stage4 <- as.integer(cx$STAGE_HIGHEST_RECORDED == "Stage 4")
-cx$age_z  <- (cx$CURRENT_AGE_DEID - mean(cx$CURRENT_AGE_DEID)) / sd(cx$CURRENT_AGE_DEID)
-c_naive <- coxph(Surv(T_dx, deceased) ~ stage4 + age_z, data = cx)
-c_corr  <- coxph(Surv(entry, T_dx, deceased) ~ stage4 + age_z, data = cx)
+c_naive <- coxph(Surv(T_dx, deceased) ~ stage4 + strata(CANCER_TYPE), data = cx)
+c_corr  <- coxph(Surv(entry, T_dx, deceased) ~ stage4 + strata(CANCER_TYPE), data = cx)
+c_seq   <- coxph(Surv(OS_MONTHS, deceased) ~ stage4 + strata(CANCER_TYPE), data = cx)
 hr <- function(m,v) round(exp(coef(m)[v]),2)
-res[["f) HR estadio IV INGENUO"]]   <- c(2.92, hr(c_naive,"stage4"))
-res[["f) HR estadio IV CORRIGIDO"]] <- c(2.30, hr(c_corr,"stage4"))
-res[["f) HR idade INGENUO"]]        <- c(0.94, hr(c_naive,"age_z"))
-res[["f) HR idade CORRIGIDO"]]      <- c(0.98, hr(c_corr,"age_z"))
+res[["f) HR estadio IV INGENUO"]]   <- c(2.94, hr(c_naive,"stage4"))
+res[["f) HR estadio IV CORRIGIDO"]] <- c(2.47, hr(c_corr,"stage4"))
+res[["f) HR estadio IV SEQUENC."]]  <- c(2.27, hr(c_seq,"stage4"))
 
 # ---------------------------------------------------------------- relatorio ---
 cat("\n=================== ALEGADO  vs  OBTIDO ===================\n")
