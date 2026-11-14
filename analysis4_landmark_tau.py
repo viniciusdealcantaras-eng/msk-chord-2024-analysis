@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# New analyses requested by reviewer (round 2): landmark sensitivity, conditional
-# Kendall's tau (quasi-independence), Schoenfeld PH test, age HR, exact stage counts.
+# Landmark analysis at 6 and 12 months, conditional Kendall's tau for
+# quasi-independence (subsample test), Schoenfeld test and stage counts.
 import pandas as pd, numpy as np, json
 from lifelines import KaplanMeierFitter, CoxPHFitter
 from lifelines.statistics import proportional_hazard_test
@@ -21,7 +21,7 @@ R["ref_naive_median"] = round(km_median(d["T_dx"], d["deceased"]), 1)
 R["ref_ltrunc_median"] = round(km_median(d["T_dx"], d["deceased"], entry=d["entry"]), 1)
 R["ref_fromseq_median"] = round(km_median(d["OS_MONTHS"], d["deceased"]), 1)
 
-# ---------- (M3a) LANDMARK sensitivity at 6 and 12 months from diagnosis ----------
+# ---------- landmark analysis at 6 and 12 months from diagnosis ----------
 # include patients sequenced by t0 (entry<=t0) AND alive at t0 (T_dx>t0);
 # estimate survival measured from diagnosis, conditional on reaching t0 in-cohort.
 R["landmark"] = {}
@@ -44,7 +44,7 @@ for t0 in [6, 12]:
                                   "median_OS_from_dx": round(med_from_dx, 1),
                                   "stageIV_HR": round(hr, 2), "ci": [round(lo, 2), round(hi, 2)]}
 
-# ---------- (M3b) conditional Kendall's tau for quasi-independence (Martin-Betensky) ----------
+# ---------- conditional Kendall's tau for quasi-independence (Martin-Betensky) ----------
 # subsample for tractability (O(n^2) over ~25k is 6e8 pairs); fixed seed.
 rng = np.random.RandomState(20260728)
 sub = d.sample(n=5000, random_state=rng) if len(d) > 5000 else d
@@ -66,7 +66,7 @@ for i in range(n):
         s = np.sign((Li - Lj[use]) * (Xi - Xj[use]))
         conc += int((s > 0).sum()); disc += int((s < 0).sum()); comp += int(use.sum())
 tau_c = (conc - disc) / comp if comp else float("nan")
-# analytic-ish SE via normal approx on concordant fraction (disclose subsample)
+# approximate SE via normal approximation on the concordant fraction (subsample)
 p_conc = conc / comp
 se = np.sqrt(4 * p_conc * (1 - p_conc) / comp)  # rough
 z = tau_c / se if se > 0 else float("nan")
@@ -76,11 +76,11 @@ R["cond_kendall_tau"] = {"n_subsample": int(n), "comparable_pairs": int(comp),
                          "tau_c": round(tau_c, 3), "z": round(float(z), 1),
                          "p": float(pval), "seed": 20260728}
 
-# ---------- (minor) Schoenfeld PH test for stage4 (left-truncated, stratified) ----------
+# ---------- Schoenfeld PH test for stage IV (stratified by cancer type) ----------
 cx = d[d["STAGE_HIGHEST_RECORDED"].isin(["Stage 1-3", "Stage 4"])].copy()
 cx["stage4"] = (cx["STAGE_HIGHEST_RECORDED"] == "Stage 4").astype(int)
 # PH residuals not implemented for delayed-entry models in lifelines; test on the
-# from-sequencing clock (no entry), stratified by cancer type — same stage effect.
+# from-sequencing clock (no entry), stratified by cancer type, same stage effect.
 cph = CoxPHFitter()
 cph.fit(cx[["OS_MONTHS", "deceased", "stage4", "cancer_type"]],
         duration_col="OS_MONTHS", event_col="deceased", strata=["cancer_type"])
@@ -88,18 +88,7 @@ ph = proportional_hazard_test(cph, cx[["OS_MONTHS", "deceased", "stage4", "cance
 R["ph_test_stage4"] = {"test_stat": round(float(ph.summary["test_statistic"].iloc[0]), 2),
                        "p": float(ph.summary["p"].iloc[0])}
 
-# ---------- (minor) age HR: the "implausible protective" effect ----------
-cxa = cx.dropna(subset=["CURRENT_AGE_DEID"]).copy()
-cxa["age_z"] = (cxa["CURRENT_AGE_DEID"] - cxa["CURRENT_AGE_DEID"].mean()) / cxa["CURRENT_AGE_DEID"].std()
-def age_hr(entry_col):
-    m = CoxPHFitter()
-    cols = ["T_dx", "deceased", "stage4", "age_z"] + ([entry_col] if entry_col else [])
-    m.fit(cxa[cols], duration_col="T_dx", event_col="deceased", entry_col=entry_col)
-    return round(float(np.exp(m.params_["age_z"])), 2)
-R["age_HR_naive"] = age_hr(None)
-R["age_HR_corrected"] = age_hr("entry")
-
-# ---------- (minor) exact stage counts in analysis set ----------
+# ---------- stage counts in the analysis set ----------
 vc = d["STAGE_HIGHEST_RECORDED"].value_counts(dropna=False)
 R["stage_counts"] = {str(k): int(v) for k, v in vc.items()}
 n13 = int((d["STAGE_HIGHEST_RECORDED"] == "Stage 1-3").sum())
@@ -107,5 +96,5 @@ n4 = int((d["STAGE_HIGHEST_RECORDED"] == "Stage 4").sum())
 R["stage_pct_of_total"] = {"Stage 1-3": round(100*n13/len(d), 1), "Stage 4": round(100*n4/len(d), 1),
                            "denominator": int(len(d))}
 
-json.dump(R, open("out/results4_reviewer.json", "w"), indent=2)
+json.dump(R, open("out/results4_landmark_tau.json", "w"), indent=2)
 print(json.dumps(R, indent=2))
