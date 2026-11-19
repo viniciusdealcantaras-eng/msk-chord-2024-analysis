@@ -57,17 +57,24 @@ folders are created automatically and are git-ignored.
    sensitivity analysis. Writes `out/results2.json`.
 5. `python analysis3.py`: Cox models for stage IV stratified by cancer type.
    Writes `out/results3_strat.json`.
-6. `python analysis4_landmark_tau.py`: landmark analysis, conditional Kendall's
-   tau (subsample test) and Schoenfeld test. Writes `out/results4_landmark_tau.json`.
+6. `python analysis4_landmark_tau.py`: landmark restricted to patients already
+   sequenced by the landmark (reported for comparison in the note to
+   Supplementary Table S3), subsample tau test and Schoenfeld test. Writes `out/results4_landmark_tau.json`.
 7. `python analysis5_sensitivity.py`: sensitivity analyses: stage at the index
    diagnosis, exclusion of intervals longer than 10 and 20 years, early risk
    sets, medians by cancer type and the full-cohort conditional Kendall's tau.
    Writes `out/results5_sensitivity.json`.
-8. `Rscript make_figures.R`: Figures 1 to 4 and Supplementary Figures S1 and
+8. `python analysis6_landmark_tau_by_type.py`: landmark at 6 and 12 months
+   with delayed entry for patients sequenced after the landmark (Supplementary
+   Table S3), conditional Kendall's tau with U-statistic standard error overall,
+   by cancer type and by cancer type and stage (Supplementary Table S5), and
+   characteristics, follow-up and stage IV hazard ratio by cancer type
+   (Supplementary Table S4). Writes `out/results6_landmark_tau_by_type.json`.
+9. `Rscript make_figures.R`: Figures 1 to 4 and Supplementary Figures S1 and
    S2, generated in R (base graphics and `survival`) from
    `out/analytic_dataset.csv`. Writes TIFF (600 dpi), PNG and PDF files to
    `out/figures/`.
-9. `python verify.py`: internal check, a manual risk-set Kaplan-Meier with left
+10. `python verify.py`: internal check, a manual risk-set Kaplan-Meier with left
    truncation compared against `lifelines` (medians and survival
    probabilities must match).
 
@@ -76,6 +83,12 @@ folders are created automatically and are git-ignored.
 `Rscript verificar_CHORD.R` downloads the data again and recomputes the key
 numbers with the `survival` package (left truncation via
 `Surv(entry, exit, event)`), printing a claimed-vs-obtained table.
+
+## Stata
+
+`landmark_hr_by_type.do` reads `out/analytic_dataset.csv` and fits the
+left-truncated Cox model, the stage IV hazard ratio by cancer type and the
+landmark analysis with delayed entry. It does not save or overwrite any dataset.
 
 ## Notes
 
